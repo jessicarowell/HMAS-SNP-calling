@@ -1,7 +1,6 @@
 import os
 import argparse
 import glob
-from Bio import SeqIO
 from itertools import combinations
 from functools import partial
 import multiprocessing
@@ -15,11 +14,11 @@ def calcCoverage(refSeq, inBam, baseName):
     Params
     ------
     refSeq: String
-         File location of the reference multifasta file (already indexed)
+        File location of the reference multifasta file (already indexed)
     inBam: String
-         File location of the input bam file
+        File location of the input bam file
     baseName: String
-         Basename of the isolate 
+        Basename of the isolate 
 
     Returns
         -------
@@ -47,16 +46,16 @@ def callVariants(inBcf, baseName):
     Params
     ------
     refSeq: String
-         File location of the reference multifasta file (already indexed)
+        File location of the reference multifasta file (already indexed)
     inBcf: String
-         File location of the input bcf file
+        File location of the input bcf file
     baseName: String
-         Basename of the isolate 
+        Basename of the isolate 
 
     Returns
     -------
     vcfFile: String
-         File location of the output vcf file
+        File location of the output vcf file
 
     """
     bcfFile = baseName+'.bcf'
@@ -77,6 +76,48 @@ def callVariants(inBcf, baseName):
 
 
 
+def bcftoolsParallelFunctions(samFile):
+    """Run SNP calling functions 
+
+    Params
+    ------
+    samFile: String
+        File location of the reference multifasta file (already indexed)
+    inBcf: String
+        File location of the input bcf file
+    baseName: String
+        Basename of the isolate 
+
+    Returns
+    -------
+    vcfFile: String
+        File location of the output vcf file
+
+    """
+    baseName = (os.path.splitext(samFile)[0])
+    bam = calcCoverage(args.reference, samFile, baseName)
+    bcf = callVariants(bam, baseName)
+    
+    return(bcf)
+    # Should actually return the SNPs ... left bcf here for now until I finish the script
+
+# Get this from Sean because he already wrote a function that processes in parallel
+def ParallelRunner(myFunction, inputFiles):
+    """ Run functions on multiple files in parallel
+
+    Params
+    ------
+    myFunction: String
+        Name of the function to run
+    inputFiles: String
+        list of input files to run in parallel
+
+    Returns
+    -------
+        # Not sure yet: status ok? a list of files processed?
+        # Maybe a list of the files processed, include status in log file
+    """
+
 parser = argparse.ArgumentParser(description='Script takes sam files and performs SNP calling against a reference sequence using bcftools mpileup')
 parser.add_argument('-d', 'directory',type=str,help='Enter the path to the folder containing the sam files to be used')
 parser.add_argument('reference',type=str,help='Enter the path to the reference isolate')
@@ -86,12 +127,12 @@ args = parser.parse_args()
 samFiles = sorted(glob.glob(args.directory+'*.sam'))
 logFile = 'snpcaller.log'
 
-bwaIndexFile = bwaIndex(args.reference)
-sortedReferenceFile = sortReference(args.reference)
-seqDictFile = sequenceDictionary(args.reference,args.picardPath)
 
 
-
+# Use parallel processing from Sean's functions to process the samFiles
 if __name__ == '__main__':
     # Run mpileup here
+    results = ParallelRunner(bcftoolsParallelFunctions, samFiles)
+
+
 
