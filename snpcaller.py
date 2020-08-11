@@ -135,4 +135,4 @@ if __name__ == '__main__':
     results = ParallelRunner(bcftoolsParallelFunctions, samFiles)
 
 
-
+# Output some stats to a file (once I have written a function to tabulate the SNPs called)
