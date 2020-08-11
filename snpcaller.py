@@ -119,8 +119,8 @@ def ParallelRunner(myFunction, inputFiles):
     """
 
 parser = argparse.ArgumentParser(description='Script takes sam files and performs SNP calling against a reference sequence using bcftools mpileup')
-parser.add_argument('-d', 'directory',type=str,help='Enter the path to the folder containing the sam files to be used')
-parser.add_argument('reference',type=str,help='Enter the path to the reference isolate')
+parser.add_argument('-d', '-directory',type=str,help='Enter the path to the folder containing the sam files to be used')
+parser.add_argument('-r', '-reference',type=str,help='Enter the path to the reference isolate')
 args = parser.parse_args()
 
 
