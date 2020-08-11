@@ -7,21 +7,21 @@ Contains info on the SNP Calling pipeline, for downstream of analysis after QC o
 Current Path: `/scicomp/home/ick4/data/snpcalling`  (referred to herein as `$HOME/$PROJECT`)
 Path for data used in analysis: `$HOME/$PROJECT`
 
-Raw data located here:
+Raw data located here: `/scicomp/groups/OID/NCEZID/DFWED/EDLB/projects/CIMS/Salmonella/SnpCalling`
 
 
 
 ## Description of Contents
 
-`$HOME/$PROJECT/`
+`$HOME/$PROJECT/snpcaller.py`
+Script for calling SNPs from HMAS data.  
+At the moment this script follows from Sean's SNP calling (GATK) script and takes in sorted, de-duplicated .sam files
 
-`$HOME/$PROJECT/`
+`$HOME/$PROJECT/SNP_Calling_Flowchart.pdf`
+A simple flowchart to track the logic of the SNP calling
 	
-These files were generated using the following bash script:
-`*.sh`
-Located in: /scicomp/home/ick4/scripts
 Created by: Jessica Rowell
-Last modified: 6/10/2020
+Last modified: 8/10/2020
 
 
 ## END

@@ -9,64 +9,72 @@ import subprocess
 
 
 # Calculate read coverage of positions in the genome
-
-
-
-
-
-# Detect the SNPs
-def callVariants(refSeq,fastq,baseName):
-
-    """Uses bcftools mpileup to call SNVs
+def calcCoverage(refSeq, inBam, baseName):
+    """Uses bcftools mpileup to read coverage of positions in genome
 
     Params
     ------
     refSeq: String
-         File location of the reference multifasta file
-    bamFile: String
+         File location of the reference multifasta file (already indexed)
+    inBam: String
          File location of the input bam file
     baseName: String
-         Basename of the isolate being aligned against the reference
+         Basename of the isolate 
 
     Returns
-    -------
-    samFile: String
-         File location of the created sam file
+        -------
+        bcfFile: String
+             File location of the output bcf file
 
     """
-
-    samFile = baseName+'.sam'
+    bamFile = baseName+'.bam'
+    bcfFile = baseName+'.bcf'
     
     try:
-        mpileup_cmd = 'bwa mem -R "@RG\\tID:FLOWCELL1.LANE1\\tPL:ILLUMINA\\tLB:test\\tSM:PA01" '+refSeq+' '+fastq+' > '+samFile
-        if os.system(bwa_cmd) != 0:
-            raise Exception('Aint work yo')
-    except:
-        print('borked')
-
-    return(samFile)
-
-def callVariants(refSeq,deDupBam,baseName):
-
-
-    try:
-        r1 = subprocess.check_output(['gatk','--java-options','-Xmx4g','HaplotypeCaller','-ploidy','1','-R',refSeq,'-I',deDupBam,'-O',baseName+'.vcf'])
+        r1 = subprocess.check_output(['bcftools', 'mpileup', '-O','b','-o', bcfFile,'-f', refSeq, bamFile])
+        # options: -O b to generate bcf format output, -f flags path to reference genome
     except subprocess.CalledProcessError as error:
         errorMsg = ('Status : Fail',error.returncode,error.output.strip('\n'))
-    return(baseName+'.vcf')
+    
+    return(bcfFile)
 
 
 # Filter and report the SNP variants in variant calling format
+def callVariants(inBcf, baseName):
 
+    """Uses bcftools call to detect SNPs
 
+    Params
+    ------
+    refSeq: String
+         File location of the reference multifasta file (already indexed)
+    inBcf: String
+         File location of the input bcf file
+    baseName: String
+         Basename of the isolate 
 
+    Returns
+    -------
+    vcfFile: String
+         File location of the output vcf file
 
-
-
-
-
+    """
+    bcfFile = baseName+'.bcf'
+    vcfFile = baseName+'.vcf'
+    
+    try:
+        r1 = subprocess.check_output(['bcftools', 'call', '-ploidy','1', '-m','-v','-o', vcfFile, bcfFile])
+        # options: -m for multiallelic & rare-variant calling, -v to output variant sites only, ploidy is 1 for haploid genome 
+    except subprocess.CalledProcessError as error:
+        errorMsg = ('Status : Fail',error.returncode,error.output.strip('\n'))
+    
+    return(vcfFile)
+    
 
 # Assess the alignment - visualization (maybe in a separate script?)
+
+    # Using bcftools view
+
 
 
 parser = argparse.ArgumentParser(description='Script takes sam files and performs SNP calling against a reference sequence using bcftools mpileup')
@@ -82,11 +90,6 @@ bwaIndexFile = bwaIndex(args.reference)
 sortedReferenceFile = sortReference(args.reference)
 seqDictFile = sequenceDictionary(args.reference,args.picardPath)
 
-# use refFileCheck from Sean's script to check the ref file?
-refPass = refFileCheck(bwaIndexFile,sortedReferenceFile,seqDictFile)
-
-if refPass == False:
-    os.exit('Problem encountered with the reference file')
 
 
 if __name__ == '__main__':
