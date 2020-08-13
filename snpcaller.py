@@ -26,8 +26,8 @@ def calcCoverage(refSeq, inBam, baseName):
              File location of the output bcf file
 
     """
-    bamFile = baseName+'.bam'
-    bcfFile = baseName+'.bcf'
+    bamFile = inBam+'/'+baseName+'.bam'
+    bcfFile = inBam+'/'+baseName+'.bcf'
     
     try:
         r1 = subprocess.check_output(['bcftools', 'mpileup', '-O','b','-o', bcfFile,'-f', refSeq, bamFile])
@@ -46,7 +46,7 @@ def callVariants(inBcf, baseName):
     Params
     ------
     refSeq: String
-        File location of the reference multifasta file (already indexed)
+        File location of the bcf file (already indexed)
     inBcf: String
         File location of the input bcf file
     baseName: String
@@ -58,11 +58,11 @@ def callVariants(inBcf, baseName):
         File location of the output vcf file
 
     """
-    bcfFile = baseName+'.bcf'
-    vcfFile = baseName+'.vcf'
+    bcfFile = inBcf+'/'+baseName+'.bcf'
+    vcfFile = inBcf+'/'+baseName+'.vcf'
     
     try:
-        r1 = subprocess.check_output(['bcftools', 'call', '-ploidy','1', '-m','-v','-o', vcfFile, bcfFile])
+        r1 = subprocess.check_output(['bcftools', 'call', '--ploidy','1', '-m','-v','-o', vcfFile, bcfFile])
         # options: -m for multiallelic & rare-variant calling, -v to output variant sites only, ploidy is 1 for haploid genome 
     except subprocess.CalledProcessError as error:
         errorMsg = ('Status : Fail',error.returncode,error.output.strip('\n'))
