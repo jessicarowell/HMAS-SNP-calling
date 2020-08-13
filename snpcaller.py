@@ -40,13 +40,10 @@ def calcCoverage(refSeq, inBam, baseName):
 
 # Filter and report the SNP variants in variant calling format
 def callVariants(inBcf, baseName):
-
     """Uses bcftools call to detect SNPs
 
     Params
     ------
-    refSeq: String
-        File location of the bcf file (already indexed)
     inBcf: String
         File location of the input bcf file
     baseName: String
@@ -76,32 +73,28 @@ def callVariants(inBcf, baseName):
 
 
 
-def bcftoolsParallelFunctions(samFile):
+def bcftoolsParallelFunctions(bamFile):
     """Run SNP calling functions 
 
     Params
     ------
-    samFile: String
-        File location of the reference multifasta file (already indexed)
-    inBcf: String
-        File location of the input bcf file
-    baseName: String
-        Basename of the isolate 
+    bamFile: String
+        File path of the input bam file 
 
     Returns
     -------
-    vcfFile: String
+    vcf: String
         File location of the output vcf file
 
     """
     baseName = (os.path.splitext(samFile)[0])
-    bam = calcCoverage(args.reference, samFile, baseName)
-    bcf = callVariants(bam, baseName)
+    bcf = calcCoverage(args.reference, bamFile, baseName)
+    vcf = callVariants(bcf, baseName)
     
     return(bcf)
     # Should actually return the SNPs ... left bcf here for now until I finish the script
 
-# Get this from Sean because he already wrote a function that processes in parallel
+# Got this from Sean because he had already written it
 def ParallelRunner(myFunction, inputFiles):
     """ Run functions on multiple files in parallel
 
