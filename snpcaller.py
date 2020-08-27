@@ -125,7 +125,7 @@ def extractSNPs(vcfFile, baseName):
 
     """
 
-    r1 = subprocess.Popen(('vcftools','--vcf',vcf,'--freq'),stderr=subprocess.PIPE)
+    r1 = subprocess.Popen(('vcftools','--vcf',vcfFile,'--freq'),stderr=subprocess.PIPE)
     r2 =(r1.stderr.read().decode('ascii'))
     r2 = r2.split('\n')
     snpCount = vcfOutputParser(r2,baseName)
