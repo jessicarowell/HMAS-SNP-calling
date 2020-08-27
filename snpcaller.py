@@ -81,7 +81,7 @@ def callVariants(bcfFile, baseName):
     
 
 
-
+def vcfOutputParser(logList, baseName):
     """Parses vcf output file
 
     Params
