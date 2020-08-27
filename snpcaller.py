@@ -203,12 +203,10 @@ def ParallelRunner(parallelFunctions, inputFiles):
 
 
 
-
-
 parser = argparse.ArgumentParser(description='Script takes bam files and performs SNP calling against a reference sequence using bcftools mpileup')
 parser.add_argument('-d', '--directory',type=str,help='Enter the path to the folder containing the bam files to be used')
 parser.add_argument('-r', '--reference',type=str,help='Enter the path to the reference isolate')
-parser.add_argument('-n', '--numcores',type=int,help='Enter the number of cores you would like to be utillized during processing')
+parser.add_argument('-n', '--numcores',type=int,help='Enter the number of cores you would like to use during processing')
 args = parser.parse_args()
 
 
