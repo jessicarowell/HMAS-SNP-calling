@@ -6,8 +6,22 @@ from functools import partial
 import multiprocessing
 import subprocess
 
+class Pairwise:
+    """Calculated pairwise differnce counts between two isolate multifasta files
 
-# Calculate read coverage of positions in the genome
+    Attributes:
+        isolate1: String representing the name of the first isolate in the comparison
+        snpDiff: Integer representing the number of snp differnces calculated by GATK HaplotypeCaller
+
+    """
+    def __init__(self,isolate1,snpDiff):
+        self.isolate1 = isolate1
+        self.snpDiff = snpDiff 
+
+    """
+    Returns a new Pairwise object
+    """
+
 def calcCoverage(refSeq, inBam, baseName):
     """Uses bcftools mpileup to read coverage of positions in genome
 
@@ -38,14 +52,13 @@ def calcCoverage(refSeq, inBam, baseName):
     return(bcfFile)
 
 
-# Filter and report the SNP variants in variant calling format
-def callVariants(inBcf, baseName):
+def callVariants(bcfFile, baseName):
     """Uses bcftools call to detect SNPs
 
     Params
     ------
-    inBcf: String
-        File location of the input bcf file
+    bcfFile: String
+        Input bcf file
     baseName: String
         Basename of the isolate 
 
@@ -55,7 +68,7 @@ def callVariants(inBcf, baseName):
         File location of the output vcf file
 
     """
-    bcfFile = inBcf+'/'+baseName+'.bcf'
+    inBcf = os.path.dirname(bcfFile)
     vcfFile = inBcf+'/'+baseName+'.vcf'
     
     try:
@@ -66,11 +79,6 @@ def callVariants(inBcf, baseName):
     
     return(vcfFile)
     
-
-# Assess the alignment - visualization (maybe in a separate script?)
-
-    # Using bcftools view
-
 
 
 def bcftoolsParallelFunctions(bamFile):
@@ -87,14 +95,84 @@ def bcftoolsParallelFunctions(bamFile):
         File location of the output vcf file
 
     """
-    baseName = (os.path.splitext(samFile)[0])
+    baseName = (os.path.splitext(bamFile)[0])
     bcf = calcCoverage(args.reference, bamFile, baseName)
     vcf = callVariants(bcf, baseName)
+    snpCount = extractSNPs(vcf)
     
-    return(bcf)
-    # Should actually return the SNPs ... left bcf here for now until I finish the script
+    return(snpCount)
 
-# Got this from Sean because he had already written it
+
+# Got these from Sean because he had already written them
+def vcfOutputParser(logList,baseName): 
+    """Parses vcf output file
+
+    Params
+    ------
+    logList: String
+        A list of the lines in the log file created by vcf filtering command
+    baseName: String
+        Basename of the isolate 
+
+    Returns
+    -------
+    snpCount: String
+        The number of SNPs after filtering
+
+    """   
+    snps = 0
+    baseName = baseName.split('/')[-1]
+    
+    for line in logList:
+        if line.startswith('After filtering'):
+            if 'possible' in line:
+                snps = int(line.split(' ')[3])
+
+    snpCount = Pairwise(baseName,snps)
+    return(snpCount)
+                
+
+
+def extractSNPs(vcfFile)
+"""Performs vcf filtering
+
+    Params
+    ------
+    vcfFile: String
+        Input vcf file
+ 
+    Returns
+    -------
+    snpCount: String
+        The number of SNPs after filtering
+
+    """   
+    r1 = subprocess.Popen(('vcftools','--vcf',vcf,'--freq'),stderr=subprocess.PIPE)
+    r2 =(r1.stderr.read().decode('ascii'))
+    r2 = r2.split('\n')
+    snpCount = vcfOutputParser(r2,baseName)
+    return(snpCount)
+
+def listener_process(q):
+    """Sets the logging file for the listener process
+
+    Params
+    ------
+    q: queue
+         queue for logging events
+
+    Returns
+    -------
+
+    """
+    with open(logFile,'w') as f:
+        while 1:
+            msg = q.get()
+            if msg == 'kill':
+                break
+            f.write(str(msg)+'\n')
+            f.flush()
+
 def ParallelRunner(myFunction, inputFiles):
     """ Run functions on multiple files in parallel
 
@@ -110,6 +188,21 @@ def ParallelRunner(myFunction, inputFiles):
         # Not sure yet: status ok? a list of files processed?
         # Maybe a list of the files processed, include status in log file
     """
+
+    manager = multiprocessing.Manager()
+    q = manager.Queue()
+    pool = multiprocessing.Pool(processes=args.NumCores)
+    watcher = pool.apply_async(listener_process,(q,))
+    parallelStatic = partial(parallelFunctions,q=q)
+    result_list = pool.map(parallelStatic,inputFiles)
+    q.put('kill')
+    pool.close()
+    pool.join()
+    return(result_list)
+
+
+
+
 
 parser = argparse.ArgumentParser(description='Script takes sam files and performs SNP calling against a reference sequence using bcftools mpileup')
 parser.add_argument('-d', '-directory',type=str,help='Enter the path to the folder containing the sam files to be used')
@@ -128,4 +221,4 @@ if __name__ == '__main__':
     results = ParallelRunner(bcftoolsParallelFunctions, samFiles)
 
 
-# Output some stats to a file (once I have written a function to tabulate the SNPs called)
+# Output isolate SNP count to a file (once I have written a function to tabulate the SNPs called)
