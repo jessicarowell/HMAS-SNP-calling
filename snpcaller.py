@@ -192,7 +192,7 @@ def ParallelRunner(parallelFunctions, inputFiles):
 
     manager = multiprocessing.Manager()
     q = manager.Queue()
-    pool = multiprocessing.Pool(processes=args.NumCores)
+    pool = multiprocessing.Pool(processes=args.numcores)
     watcher = pool.apply_async(listener_process,(q,))
     parallelStatic = partial(parallelFunctions,q=q)
     result_list = pool.map(parallelStatic,inputFiles)
