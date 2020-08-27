@@ -22,15 +22,15 @@ class Pairwise:
     Returns a new Pairwise object
     """
 
-def calcCoverage(refSeq, inBam, baseName):
+def calcCoverage(refSeq, bamFile, baseName):
     """Uses bcftools mpileup to read coverage of positions in genome
 
     Params
     ------
     refSeq: String
         File location of the reference multifasta file (already indexed)
-    inBam: String
-        File location of the input bam file
+    bamFile: String
+        Name of the input bam file
     baseName: String
         Basename of the isolate 
 
@@ -40,7 +40,7 @@ def calcCoverage(refSeq, inBam, baseName):
              File location of the output bcf file
 
     """
-    bamFile = inBam+'/'+baseName+'.bam'
+    inBam = os.path.dirname(bamFile)
     bcfFile = inBam+'/'+baseName+'.bcf'
     
     try:
@@ -81,30 +81,7 @@ def callVariants(bcfFile, baseName):
     
 
 
-def bcftoolsParallelFunctions(bamFile):
-    """Run SNP calling functions 
 
-    Params
-    ------
-    bamFile: String
-        File path of the input bam file 
-
-    Returns
-    -------
-    vcf: String
-        File location of the output vcf file
-
-    """
-    baseName = (os.path.splitext(bamFile)[0])
-    bcf = calcCoverage(args.reference, bamFile, baseName)
-    vcf = callVariants(bcf, baseName)
-    snpCount = extractSNPs(vcf)
-    
-    return(snpCount)
-
-
-# Got these from Sean because he had already written them
-def vcfOutputParser(logList,baseName): 
     """Parses vcf output file
 
     Params
@@ -121,7 +98,7 @@ def vcfOutputParser(logList,baseName):
 
     """   
     snps = 0
-    baseName = baseName.split('/')[-1]
+    #baseName = baseName.split('/')[-1]
     
     for line in logList:
         if line.startswith('After filtering'):
@@ -133,8 +110,8 @@ def vcfOutputParser(logList,baseName):
                 
 
 
-def extractSNPs(vcfFile)
-"""Performs vcf filtering
+def extractSNPs(vcfFile, baseName):
+    """Performs vcf filtering
 
     Params
     ------
@@ -146,7 +123,8 @@ def extractSNPs(vcfFile)
     snpCount: String
         The number of SNPs after filtering
 
-    """   
+    """
+
     r1 = subprocess.Popen(('vcftools','--vcf',vcf,'--freq'),stderr=subprocess.PIPE)
     r2 =(r1.stderr.read().decode('ascii'))
     r2 = r2.split('\n')
@@ -173,20 +151,43 @@ def listener_process(q):
             f.write(str(msg)+'\n')
             f.flush()
 
-def ParallelRunner(myFunction, inputFiles):
+
+def bcftoolsParallelFunctions(bamFile):
+    """Run SNP calling functions 
+
+    Params
+    ------
+    bamFile: String
+        File path of the input bam file 
+
+    Returns
+    -------
+    snpCount: String
+        Count of SNP differences between isolate and reference
+
+    """
+    baseName = os.path.basename(bamFile)
+    bcf = calcCoverage(args.reference, bamFile, baseName)
+    vcf = callVariants(bcf, baseName)
+    snpCount = extractSNPs(vcf, baseName)
+    
+    return(snpCount)
+
+
+
+def ParallelRunner(parallelFunctions, inputFiles):
     """ Run functions on multiple files in parallel
 
     Params
     ------
-    myFunction: String
+    parallelFunctions: String
         Name of the function to run
     inputFiles: String
         list of input files to run in parallel
 
     Returns
     -------
-        # Not sure yet: status ok? a list of files processed?
-        # Maybe a list of the files processed, include status in log file
+        
     """
 
     manager = multiprocessing.Manager()
@@ -204,13 +205,14 @@ def ParallelRunner(myFunction, inputFiles):
 
 
 
-parser = argparse.ArgumentParser(description='Script takes sam files and performs SNP calling against a reference sequence using bcftools mpileup')
-parser.add_argument('-d', '-directory',type=str,help='Enter the path to the folder containing the sam files to be used')
+parser = argparse.ArgumentParser(description='Script takes bam files and performs SNP calling against a reference sequence using bcftools mpileup')
+parser.add_argument('-d', '-directory',type=str,help='Enter the path to the folder containing the bam files to be used')
 parser.add_argument('-r', '-reference',type=str,help='Enter the path to the reference isolate')
 args = parser.parse_args()
 
 
-samFiles = sorted(glob.glob(args.directory+'*.sam'))
+# Starting from the de-duplicated bam files
+bamFiles = sorted(glob.glob(args.directory+'/'+'*deDup.bam'))
 logFile = 'snpcaller.log'
 
 
@@ -218,7 +220,7 @@ logFile = 'snpcaller.log'
 # Use parallel processing from Sean's functions to process the samFiles
 if __name__ == '__main__':
     # Run mpileup here
-    results = ParallelRunner(bcftoolsParallelFunctions, samFiles)
+    results = ParallelRunner(bcftoolsParallelFunctions, bamFiles)
 
 
 # Output isolate SNP count to a file (once I have written a function to tabulate the SNPs called)
