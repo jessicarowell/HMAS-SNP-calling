@@ -152,7 +152,7 @@ def listener_process(q):
             f.flush()
 
 
-def bcftoolsParallelFunctions(bamFile):
+def bcftoolsParallelFunctions(bamFile, q):
     """Run SNP calling functions 
 
     Params
