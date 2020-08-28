@@ -166,7 +166,7 @@ def bcftoolsParallelFunctions(bamFile, q):
         Count of SNP differences between isolate and reference
 
     """
-    baseName = os.path.basename(bamFile)
+    baseName = os.path.splitext(os.path.basename(bamFile))[0]
     bcf = calcCoverage(args.reference, bamFile, baseName)
     vcf = callVariants(bcf, baseName)
     snpCount = extractSNPs(vcf, baseName)
@@ -207,6 +207,7 @@ parser = argparse.ArgumentParser(description='Script takes bam files and perform
 parser.add_argument('-d', '--directory',type=str,help='Enter the path to the folder containing the bam files to be used')
 parser.add_argument('-r', '--reference',type=str,help='Enter the path to the reference isolate')
 parser.add_argument('-n', '--numcores',type=int,help='Enter the number of cores you would like to use during processing')
+parser.add_argument('-o', '--output',type=str,help='Enter a name for the output file')
 args = parser.parse_args()
 
 
@@ -223,3 +224,8 @@ if __name__ == '__main__':
 
 
 # Output isolate SNP count to a file (once I have written a function to tabulate the SNPs called)
+outFile = open(args.output, 'w')
+for i in results:
+    print(i.isolate1+'\t'+str(i.snpDiff), file=outFile)
+outFile.close()
+
