@@ -219,11 +219,11 @@ logFile = 'snpcaller.log'
 
 # Use parallel processing from Sean's functions to process the samFiles
 if __name__ == '__main__':
-    # Run mpileup here
+    # Run mpileup here and tabulate the SNP counts
     results = ParallelRunner(bcftoolsParallelFunctions, bamFiles)
 
 
-# Output isolate SNP count to a file (once I have written a function to tabulate the SNPs called)
+# Output isolate SNP count to a file
 outFile = open(args.output, 'w')
 for i in results:
     print(i.isolate1+'\t'+str(i.snpDiff), file=outFile)
