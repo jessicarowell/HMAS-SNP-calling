@@ -111,7 +111,7 @@ def bcftoolsParallelFunctions(vcfFile, q):
     snpCount = extractSNPs(vcfFile, baseName)
     return(snpCount)
 
-def ParallelRunner(myFunction, inputFiles):
+def ParallelRunner(parallelFunctions, inputFiles):
     """ Run functions on multiple files in parallel
 
     Params
