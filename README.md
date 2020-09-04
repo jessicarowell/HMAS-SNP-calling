@@ -84,15 +84,15 @@ sed -i "s/\[//g"  snp_caller_struggles.txt
 ```
 
 Files that samtools mpileup choked on:
-1.8G	Sal_JEG_EC20121176deDup.bam # ran this one by hand; took a full day
-1.2G	Sal_JEG_EC20121179deDup.bam
-1.3G	Sal_JEG_EC20121180deDup.bam
-856K	Sal_JEG_OLF-SE4-0317-8deDup.bam
-3.4M	Sal_JR3_62-z36_RKS2983deDup.bam # bcf was produced but not the vcf (tried again and it was still corrupted 'No BGZF EOR marker')
+`1.8G	Sal_JEG_EC20121176deDup.bam` ran this one by hand; took a full day
+`1.2G	Sal_JEG_EC20121179deDup.bam` ran this and next 4 in 3-4 hours (after work hours)
+`1.3G	Sal_JEG_EC20121180deDup.bam`
+`856K	Sal_JEG_OLF-SE4-0317-8deDup.bam`
+`3.4M	Sal_JR3_62-z36_RKS2983deDup.bam` bcf was produced but not the vcf (tried again and it was still corrupted 'No BGZF EOR marker')
 
 Commands to run by hand:
-bcftools mpileup -O b -o Sal_JEG_EC20121176deDup.bcf -f /scicomp/home/ick4/data/snpcalling/test/ReferenceSequenceFiles/GCA_000022165.1_ASM2216v1_genomic.fna Sal_JEG_EC20121176deDup.bam
+`bcftools mpileup -O b -o Sal_JEG_EC20121176deDup.bcf -f /scicomp/home/ick4/data/snpcalling/test/ReferenceSequenceFiles/GCA_000022165.1_ASM2216v1_genomic.fna Sal_JEG_EC20121176deDup.bam`
 
-bcftools call --ploidy 1 -m -v -o Sal_JEG_EC20121176deDup.vcf Sal_JEG_EC20121176deDup.bcf
+`bcftools call --ploidy 1 -m -v -o Sal_JEG_EC20121176deDup.vcf Sal_JEG_EC20121176deDup.bcf`
 
 ## END 
