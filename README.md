@@ -10,18 +10,19 @@ Path for data used in analysis: `$HOME/$PROJECT`
 Raw data located here: `/scicomp/groups/OID/NCEZID/DFWED/EDLB/projects/CIMS/Salmonella/SnpCalling`
 
 
-
 ## Description of Contents
 
 `$HOME/$PROJECT/snpcaller.py`
 Script for calling SNPs from HMAS data.  
-At the moment this script follows from Sean's SNP calling (GATK) script and takes in sorted, de-duplicated .sam files
+At the moment this script takes sorted, de-duplicated .bam files (follows from Sean's GATK script)
+
+`$HOME/$PROJECT/extractsnps.py`
+A stripped-down version of snpcaller.py that only extracts SNPs from vcf files.  
+I made this because I needed to run some very large bam files through mpileup manually.
 
 `$HOME/$PROJECT/SNP_Calling_Flowchart.pdf`
 A simple flowchart to track the logic of the SNP calling
 	
-Created by: Jessica Rowell
-Last modified: 8/10/2020
 
 		
 ## Data manipulations done in SNP Calling tests
@@ -94,6 +95,10 @@ Commands to run by hand:
 `bcftools mpileup -O b -o Sal_JEG_EC20121177deDup.bcf -f /scicomp/home/ick4/data/snpcalling/test/ReferenceSequenceFiles/GCA_000022165.1_ASM2216v1_genomic.fna Sal_JEG_EC20121176deDup.bam`  
 
 `bcftools call --ploidy 2 -m -v -o Sal_JEG_EC20121176deDup.vcf Sal_JEG_EC20121176deDup.bcf`  
+
+Created by: Jessica Rowell
+Last modified: 9/4/2020
+
 
 
 ## END 
