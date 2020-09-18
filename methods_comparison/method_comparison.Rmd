@@ -1,0 +1,172 @@
+---
+title: 'Data Exploration: Samtools vs GATK'
+author: "Jessica Rowell"
+date: "9/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exploring the GATK and Samtools datasets
+
+SNPs were called from 266 salmonella isolates using two methods, GATK and Samtools.
+The input for each SNP calling pipeline is fasta files.
+The output from each pipeline is a list of the isolates and the number of SNPs called from each.
+
+The data used for exploring the results of these two methods combines the genome ID, the number of SNPs called for each method, and serotype code information.
+
+```{r data, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+
+gatk = read.table("Validation_Set_SNP_Calls.tsv", sep = '\t')
+sam = read.table("snpcaller_results.txt", sep = '\t')
+sero <- read.table("Sal_266_genome_serotypes.txt", sep = "\t", header = TRUE)
+
+colnames(gatk) <- c("id", "gatk")
+colnames(sam) <- c("id","sam")
+sero <- sero %>% rename(code = Serotype_code)
+sero$code <- as.factor(sero$code)
+
+d <- merge(sam, gatk, by = "id")
+d2 <- left_join(d, sero, by = c("id"  = "Genome"))
+```
+
+```{r first_look, echo=FALSE}
+head(d2)
+```
+
+There are 69 serotype codes in total.  Four of the genomes each has two serotype codes.
+
+```{r sero_dupes, echo=FALSE}
+sero %>% count(Genome) %>% filter(n > 1)
+```
+
+An initial scatterplot comparing GATK and Samtools SNP calling results shows that most of the data clusters in a roughly linear correlation.
+There are several outliers to be examined more closely.
+At this resolution, there doesn't appear to be clustering on serotype code.
+
+```{r all_plot, echo=FALSE, fig.width=8, fig.height=6}
+ggplot(d2, aes(x=sam, y=gatk, color=code)) +
+   geom_point() + theme(legend.position = "none")
+```
+
+We can see that the two datasets have roughly the same shape.
+Additionally, they have almost the same number of outliers (GATK: n=42, Samtools: n=41).
+
+```{r boxplot, echo=FALSE, fig.width=8, fig.height=6}
+par(mfrow=c(1,2))
+boxplot(d2$gatk, main="GATK")
+boxplot(d2$sam, main="Samtools")
+
+#length(boxplot.stats(d2$gatk)$out)
+#length(boxplot.stats(d2$sam)$out)
+```
+
+Density plots don't really give us additional information, but some people prefer them over boxplots.
+
+```{r density, echo=FALSE, fig.width=8, fig.height=6}
+par(mfrow=c(2,1))
+plot(density(d2$gatk), main="GATK")
+polygon(density(d2$gatk), col = "blue")
+plot(density(d2$sam), main="Samtools")
+polygon(density(d2$sam), col = "blue")
+```
+
+
+Eliminating the visually obvious outliers gives us a better picture of the overall correlation.
+There still appears to be a linear correlation, although the Samtools method has generated roughly three times as many SNPs.
+
+```{r reduce_plot, echo=FALSE, fig.width=8, fig.height=6}
+sub <- d2 %>% filter(gatk < 20000)
+ggplot(sub, aes(x=sam, y=gatk, color=code)) +
+	geom_point() + theme(legend.position = "none")
+```
+
+Dividing by 3 the number of SNPs called by Samtools, we get a plot with the same shape.
+
+
+```{r div3_plot, echo=FALSE, fig.width=8, fig.height=6}
+sub$sam3 <- sub$sam / 3
+ggplot(sub, aes(x=sam3, y=gatk, color=code)) +
+	geom_point() + theme(legend.position = "none")
+```
+
+## Looking at the outliers
+
+There are 8 visually-obvious outliers that we removed to generate the last graph.
+
+One of these is the genome that the Samtools method couldn't complete (Sal_JR3_62-z36_RKS2983).
+The de-duped bam file appears fine, and runs fine through the GATK pipeline (33,424 SNPs called). `bcftools mpileup` seems to generate a corrupt bcf file, and when `bcftools call` is run, it gives the error: 'No BGZF EOF marker; file may be truncated.'
+
+Interestingly, the three genomes with serotype code JEG called roughly the same number of SNPs for each method.  I'm not sure what to think of this, since the Samtools method called 3x as many SNPs for most of the isolates.
+
+
+```{r viz_outliers, echo=FALSE}
+ d2 %>% filter(gatk > 20000)
+```
+
+Just for curiosity, I also identified the outliers via Cook's distance.  They are the same, with the exception that Sal_JR6_1121 is not on the list now.  It seems that these samples are the ones that warrant a closer look.
+
+
+```{r cooks_outliers, echo=FALSE, fig.width=8, fig.height=6}
+l <- lm(gatk ~ sam, d2)
+cooks <- cooks.distance(l)
+#plot(cooks, pch="*", cex=2)
+#abline(h = 4*mean(cooks, na.rm=T), col="blue")
+outliers <- as.numeric(names(cooks)[(cooks > 4*mean(cooks, na.rm=T))])
+
+d2[outliers,]
+
+```
+
+I decided to incorporate the size of the bam as a proxy for the size of the sequence, to see if the outliers are different in this regard. 
+
+It is apparent that the outliers are 10-fold larger than the overall data.
+
+
+```{r size, echo=FALSE}
+size <- read.table("size.txt", sep = " ")
+colnames(size) <- c("size", "file")
+
+bams <- size %>% filter(str_detect(file, "bam")) %>% mutate(file = str_remove(file, ".bam"))
+d3 <- left_join(d2, bams, by = c("id" = "file"))
+
+writeLines("File size summary statistics for all samples\n")
+summary(d3$size)
+writeLines("\nFile size summary statistics for outliers\n")
+summary(d3[outliers,]$size)
+
+```
+
+A scatter plot color-coding size shows that the outliers are all files in the top 25% of the data.
+However, there are also many files in the top 25% that lie along the line.  All the files in the middle 50% fall along the line, and most of the smallest 25% of files do as well. There are a few exceptions among the small files that we could examine further 
+
+```{r size_plot, echo=FALSE}
+
+b <- c(-Inf,871500, 887400, Inf)
+names <- c("small", "medium", "large")
+d3$size.cat <- cut(d3$size, breaks = b, labels = names)
+
+table(d3$size.cat)
+
+ggplot(d3, aes(x=sam, y=gatk, color=size.cat)) +
+   geom_point()
+```
+
+
+It is safe to say that, for this dataset, GATK and Samtools capture a proportionately appropriate number of SNPs for most samples.  The exceptions are verry large files and some very small files. 
+Things to look into:
+
+1. Why Samtools captures 3x more SNPs on average than GATK.
+2. What's up with the very large files?
+
+
+
+
+
+
+
+
