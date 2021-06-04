@@ -272,4 +272,3 @@ Sal_JFX_CFSAN003307	JFX	Salmonella Infantis
 Sal_JJP_36805	JJP	Salmonella Newport
 Sal_JPX_var_5_CFSAN001921	JPX	Salmonella Wierd
 Sal_JEG_CDC_2010K-0968	JEG	Salmonella Enteritidis
-	   	
